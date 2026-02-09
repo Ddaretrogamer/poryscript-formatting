@@ -1,0 +1,70 @@
+{
+  "name": "pokemon-text-validator",
+  "displayName": "Pokemon Text Validator",
+  "description": "Visual text length validator for Pokemon ROM hack textboxes",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:poryscript"asdfads
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pokemonTextValidator.formatText",
+        "title": "Format Pokemon Text"
+      },
+      {
+        "command": "pokemonTextValidator.unformatText",
+        "title": "Unformat Pokemon Text"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "pokemonTextValidator.formatText",
+        "key": "alt+t",
+        "when": "editorTextFocus && !editorReadonly && editorLangId == poryscript"
+      },
+      {
+        "command": "pokemonTextValidator.unformatText",
+        "key": "alt+shift+t",
+        "when": "editorTextFocus && !editorReadonly && editorLangId == poryscript"
+      }
+    ],
+    "configuration": {
+      "title": "Pokemon Text Validator",
+      "properties": {
+        "pokemonTextValidator.maxLineLength": {
+          "type": "number",
+          "default": 208,
+          "description": "Maximum line length in pixels"
+        },
+        "pokemonTextValidator.validColor": {
+          "type": "string",
+          "default": "#0072B2",
+          "description": "Color for valid text length (hex)"
+        },
+        "pokemonTextValidator.warningColor": {
+          "type": "string",
+          "default": "#E69F00",
+          "description": "Color for text exceeding line length (hex)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}
