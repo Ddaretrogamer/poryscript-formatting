@@ -3,6 +3,9 @@
   "displayName": "Pokemon Text Validator",
   "description": "Visual text length validator for Pokemon ROM hack textboxes",
   "version": "0.0.1",
+  "publisher": "phantonomy",
+  "author": "Phantonomy",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -10,7 +13,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:poryscript"asdfads
+    "onLanguage:poryscript"
   ],
   "main": "./out/extension.js",
   "contributes": {
