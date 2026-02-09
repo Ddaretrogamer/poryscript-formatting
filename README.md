@@ -48,6 +48,9 @@ npm run compile
 ### Running
 Press F5 in VS Code to launch the Extension Development Host
 
+## Acknowledgment
+I'd like to acknowledge **Celia Dawn** for helping in conceptualization and providing feedback.
+
 ## License
 
 MIT
