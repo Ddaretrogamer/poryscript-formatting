@@ -1,10 +1,10 @@
-# Pokemon Text Validator
+# Poryscript Text Validator
 
-A Visual Studio Code extension that provides real-time visual feedback for Pokemon ROM hack text length validation.
+A Visual Studio Code extension that provides real-time visual feedback for Pokemon ROM hack text length validation when using poryscript.
 
 ## Features
 
-- **Real-time text validation**: Highlights text strings in `.pory` and `.inc` files
+- **Real-time text validation**: Highlights text strings in `.pory` files
 - **Visual color coding**: 
   - Green/acceptable color for lines within the pixel limit
   - Red/warning color for lines that exceed the limit and need line breaks
@@ -13,8 +13,8 @@ A Visual Studio Code extension that provides real-time visual feedback for Pokem
 
 ## Usage
 
-1. Open any `.pory` or `.inc` file
-2. Write text inside `msgbox()`, `format()`, or `message()` functions
+1. Open any `.pory` file
+2. Write text inside `msgbox("")` functions
 3. The extension will automatically highlight text segments:
    - Text within 208 pixels → Green background
    - Text exceeding 208 pixels → Red background (add `\n`, `\l`, or `\p` to break the line)
