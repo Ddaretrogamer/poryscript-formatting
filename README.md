@@ -6,8 +6,8 @@ A Visual Studio Code extension that provides real-time visual feedback for Pokem
 
 - **Real-time text validation**: Highlights text strings in `.pory` files
 - **Visual color coding**: 
-  - Green/acceptable color for lines within the pixel limit
-  - Red/warning color for lines that exceed the limit and need line breaks
+  - Blue/acceptable color for lines within the pixel limit
+  - Orange/warning color for lines that exceed the limit and need line breaks
 - **Pixel-accurate**: Calculates text width based on Pokemon Emerald's variable-width font system
 - **Supports placeholders**: Handles `{PLAYER}`, `{RIVAL}`, `{STR_VAR_1}`, etc.
 
