@@ -18,6 +18,8 @@ A Visual Studio Code extension that provides real-time visual feedback for Pokem
 3. The extension will automatically highlight text segments:
    - Text within 208 pixels → Green background
    - Text exceeding 208 pixels → Red background (add `\n`, `\l`, or `\p` to break the line)
+4. Highlight the entire function and press Alt + T to automattically add line breaks.
+   - Press Alt + shift + T to remove the line breaks.
 
 ## Configuration
 
