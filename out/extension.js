@@ -63,6 +63,16 @@ function activate(context) {
             validator?.validateDocument(editor);
         }
     }));
+    // Listen for configuration changes
+    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event => {
+        if (event.affectsConfiguration('pokemonTextValidator')) {
+            // Re-validate current document when settings change
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                validator?.validateDocument(editor);
+            }
+        }
+    }));
     // Validate current document
     if (vscode.window.activeTextEditor) {
         validator.validateDocument(vscode.window.activeTextEditor);

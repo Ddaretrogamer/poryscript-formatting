@@ -58,6 +58,13 @@ class TextValidator {
         }));
     }
     validateDocument(editor) {
+        const config = vscode.workspace.getConfiguration('pokemonTextValidator');
+        const enabled = config.get('enabled', true);
+        // If disabled, clear all decorations and return
+        if (!enabled) {
+            this.clearDecorations(editor);
+            return;
+        }
         const document = editor.document;
         const fileName = document.fileName.toLowerCase();
         // Only process .pory files
@@ -67,7 +74,6 @@ class TextValidator {
         const text = document.getText();
         const validRanges = [];
         const warningRanges = [];
-        const config = vscode.workspace.getConfiguration('pokemonTextValidator');
         const maxLineLength = config.get('maxLineLength', 208);
         // Find all msgbox/format/message calls
         const functionRegex = /(?:msgbox|format|message)\s*\([^)]*\)/gs;
@@ -183,6 +189,16 @@ class TextValidator {
             i++;
         }
         return totalWidth;
+    }
+    clearDecorations(editor) {
+        const validDecoration = this.decorationTypes.get('valid');
+        const warningDecoration = this.decorationTypes.get('warning');
+        if (validDecoration) {
+            editor.setDecorations(validDecoration, []);
+        }
+        if (warningDecoration) {
+            editor.setDecorations(warningDecoration, []);
+        }
     }
     dispose() {
         this.decorationTypes.forEach(dec => dec.dispose());

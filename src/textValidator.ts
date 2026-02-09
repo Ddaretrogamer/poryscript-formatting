@@ -29,6 +29,15 @@ export class TextValidator {
     }
 
     public validateDocument(editor: vscode.TextEditor) {
+        const config = vscode.workspace.getConfiguration('pokemonTextValidator');
+        const enabled = config.get<boolean>('enabled', true);
+        
+        // If disabled, clear all decorations and return
+        if (!enabled) {
+            this.clearDecorations(editor);
+            return;
+        }
+
         const document = editor.document;
         const fileName = document.fileName.toLowerCase();
 
@@ -41,7 +50,6 @@ export class TextValidator {
         const validRanges: vscode.Range[] = [];
         const warningRanges: vscode.Range[] = [];
 
-        const config = vscode.workspace.getConfiguration('pokemonTextValidator');
         const maxLineLength = config.get<number>('maxLineLength', 208);
 
         // Find all msgbox/format/message calls
@@ -192,6 +200,18 @@ export class TextValidator {
         }
 
         return totalWidth;
+    }
+
+    private clearDecorations(editor: vscode.TextEditor) {
+        const validDecoration = this.decorationTypes.get('valid');
+        const warningDecoration = this.decorationTypes.get('warning');
+        
+        if (validDecoration) {
+            editor.setDecorations(validDecoration, []);
+        }
+        if (warningDecoration) {
+            editor.setDecorations(warningDecoration, []);
+        }
     }
 
     public dispose() {

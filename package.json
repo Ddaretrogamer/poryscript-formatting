@@ -42,6 +42,11 @@
     "configuration": {
       "title": "Pokemon Text Validator",
       "properties": {
+        "pokemonTextValidator.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable text validation highlighting"
+        },
         "pokemonTextValidator.maxLineLength": {
           "type": "number",
           "default": 208,
