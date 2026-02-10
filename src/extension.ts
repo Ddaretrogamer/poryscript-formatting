@@ -68,170 +68,150 @@ export function deactivate() {
 }
 
 function formatPokemonText(textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
-    const selection = textEditor.selection;
-    const text = textEditor.document.getText(selection);
+    const document = textEditor.document;
+    const text = document.getText();
     
-    // If nothing is selected, do default tab behavior
-    if (text.length === 0) {
-        vscode.commands.executeCommand('tab');
-        return;
-    }
-
-    // Get the indentation of the first line for consistent formatting
-    const firstLineRange = new vscode.Range(
-        new vscode.Position(selection.start.line, 0),
-        selection.start
-    );
-    const indent = textEditor.document.getText(firstLineRange);
-
-    // Check if this includes a msgbox/format/message call
-    const msgboxMatch = text.match(/^(\s*)(msgbox|format|message)\s*\(\s*"([^]*?)"\s*\)\s*$/);
+    // Find all fmsgbox() calls in the document
+    // Use [ \t]* to capture only horizontal whitespace (spaces/tabs), not newlines
+    const fmsgboxRegex = /([ \t]*)(fmsgbox)\s*\(\s*"([^]*?)"\s*\)/g;
+    let match;
+    const replacements: { range: vscode.Range; text: string }[] = [];
     
-    let contentToFormat: string;
-    let prefix = '';
-    let suffix = '';
-    
-    if (msgboxMatch) {
-        // Extract the function call and content
-        const functionIndent = msgboxMatch[1];
-        const functionName = msgboxMatch[2];
-        contentToFormat = msgboxMatch[3];
-        prefix = `${functionIndent}${functionName}(`;
-        suffix = ')';
-    } else {
-        // Just format the selected text as-is
-        contentToFormat = text;
-    }
-
-    // Split by lines and process
-    const lines = contentToFormat.split(/\r?\n/);
-    const resultLines: string[] = [];
-    let isFirstLineInBlock = true; // First line in a block gets \n, rest get \l
-    
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
+    while ((match = fmsgboxRegex.exec(text)) !== null) {
+        const fullMatch = match[0];
+        const functionIndent = match[1];
+        const contentToFormat = match[3];
         
-        // Skip empty lines at the start
-        if (line.length === 0 && resultLines.length === 0) {
-            continue;
-        }
+        // Split by lines and process
+        const lines = contentToFormat.split(/\r?\n/);
+        const resultLines: string[] = [];
+        let isFirstLineInBlock = true;
         
-        // Process non-empty lines
-        if (line.length > 0) {
-            // Determine what comes after this line
-            let escapeCode = '';
-            let addBlankLine = false;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
             
-            if (i < lines.length - 1) {
-                const nextLine = lines[i + 1].trim();
+            // Skip empty lines at the start
+            if (line.length === 0 && resultLines.length === 0) {
+                continue;
+            }
+            
+            // Process non-empty lines
+            if (line.length > 0) {
+                let escapeCode = '';
                 
-                // If next line is empty, it's a paragraph break (\p)
-                if (nextLine.length === 0) {
-                    escapeCode = '\\p';
-                    addBlankLine = true;
-                    // Skip the empty line
-                    i++;
-                    // Reset for next text block
-                    isFirstLineInBlock = true;
-                } else {
-                    // First line gets \n, subsequent lines get \l
-                    escapeCode = isFirstLineInBlock ? '\\n' : '\\l';
-                    isFirstLineInBlock = false;
+                if (i < lines.length - 1) {
+                    const nextLine = lines[i + 1].trim();
+                    
+                    if (nextLine.length === 0) {
+                        escapeCode = '\\p';
+                        i++;
+                        isFirstLineInBlock = true;
+                    } else {
+                        escapeCode = isFirstLineInBlock ? '\\n' : '\\l';
+                        isFirstLineInBlock = false;
+                    }
                 }
-            }
-            
-            resultLines.push(`"${line}${escapeCode}"`);
-            
-            // Add blank line after \p
-            if (addBlankLine) {
-                resultLines.push('');
+                
+                const quotedLine = '"' + line + escapeCode + '"';
+                resultLines.push(quotedLine);
             }
         }
-    }
-    
-    // Build the final result
-    let result: string;
-    if (msgboxMatch) {
-        // Format as msgbox call with proper indentation
-        const contentIndent = indent + '    '; // Add 4 spaces for content
-        const formattedLines = resultLines.map((line, idx) => {
-            if (line === '') return ''; // Keep blank lines
-            return idx === 0 ? line : contentIndent + line;
-        }).join('\n');
         
-        result = `${prefix}${formattedLines}${suffix}`;
-    } else {
-        // Just return the formatted strings
-        result = resultLines.join('\n' + indent);
+        // Build the formatted msgbox call - construct each line separately
+        const contentIndent = functionIndent + '    ';
+        const resultParts: string[] = [functionIndent + 'msgbox(' + resultLines[0]];
+        
+        for (let i = 1; i < resultLines.length; i++) {
+            resultParts.push(contentIndent + resultLines[i]);
+        }
+        
+        resultParts[resultParts.length - 1] += ')';
+        
+        // Use the document's line ending
+        const eol = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
+        const result = resultParts.join(eol);
+        
+        const startPos = document.positionAt(match.index);
+        const endPos = document.positionAt(match.index + fullMatch.length);
+        replacements.push({ range: new vscode.Range(startPos, endPos), text: result });
     }
     
-    edit.replace(selection, result);
+    // Apply all replacements in reverse order to maintain positions
+    for (let i = replacements.length - 1; i >= 0; i--) {
+        edit.replace(replacements[i].range, replacements[i].text);
+    }
+    
+    if (replacements.length === 0) {
+        vscode.window.showInformationMessage('No fmsgbox() calls found to format.');
+    } else {
+        vscode.window.showInformationMessage(`Formatted ${replacements.length} fmsgbox() call(s).`);
+    }
 }
 
 function unformatPokemonText(textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
-    const selection = textEditor.selection;
-    const text = textEditor.document.getText(selection);
+    const document = textEditor.document;
+    const text = document.getText();
     
-    // If nothing is selected, do nothing
-    if (text.length === 0) {
-        return;
-    }
-
-    // Check if this includes a msgbox/format/message call with multiple quoted strings
-    const msgboxMatch = text.match(/^(\s*)(msgbox|format|message)\s*\(([^]*)\)\s*$/);
+    // Find all msgbox() calls with multiple quoted strings (formatted)
+    // Use [ \t]* to capture only horizontal whitespace (spaces/tabs), not newlines
+    const msgboxRegex = /([ \t]*)(msgbox)\s*\(([^]*?)\)/g;
+    let match;
+    const replacements: { range: vscode.Range; text: string }[] = [];
     
-    let contentToUnformat: string;
-    let prefix = '';
-    let suffix = '';
-    let contentIndent = '';
-    
-    if (msgboxMatch) {
-        // Extract the function call and content
-        const functionIndent = msgboxMatch[1];
-        const functionName = msgboxMatch[2];
-        const innerContent = msgboxMatch[3];
-        prefix = `${functionIndent}${functionName}(`;
-        suffix = ')';
+    while ((match = msgboxRegex.exec(text)) !== null) {
+        const fullMatch = match[0];
+        const functionIndent = match[1];
+        const innerContent = match[3];
         
-        // Content lines should use the same indentation as the msgbox line
-        contentIndent = functionIndent;
+        // Check if this is a formatted msgbox (has multiple quoted strings or escape codes)
+        const hasMultipleStrings = (innerContent.match(/"/g) || []).length > 2;
+        const hasEscapeCodes = /\\[nlp]/.test(innerContent);
+        
+        if (!hasMultipleStrings && !hasEscapeCodes) {
+            // Skip single-line msgbox calls that aren't formatted
+            continue;
+        }
         
         // Extract all quoted strings and join them
         const stringRegex = /"([^"]*)"/g;
         const strings: string[] = [];
-        let match;
+        let stringMatch;
         
-        while ((match = stringRegex.exec(innerContent)) !== null) {
-            strings.push(match[1]);
+        while ((stringMatch = stringRegex.exec(innerContent)) !== null) {
+            strings.push(stringMatch[1]);
         }
         
-        contentToUnformat = strings.join('');
-    } else {
-        // Just unformat the selected text as-is
-        // Remove quotes if present
-        contentToUnformat = text.replace(/"([^"]*)"/g, '$1');
-    }
-
-    // Replace escape codes with actual newlines
-    let unformatted = contentToUnformat
-        .replace(/\\n/g, '\n')
-        .replace(/\\l/g, '\n')
-        .replace(/\\p/g, '\n\n');
-
-    // Build result
-    let result: string;
-    if (msgboxMatch) {
-        // Add indentation to each line
+        const contentToUnformat = strings.join('');
+        
+        // Replace escape codes with actual newlines
+        let unformatted = contentToUnformat
+            .replace(/\\n/g, '\n')
+            .replace(/\\l/g, '\n')
+            .replace(/\\p/g, '\n\n');
+        
+        // Build result with proper indentation
         const lines = unformatted.split('\n');
         const indentedLines = lines.map((line, idx) => {
-            if (idx === 0) return line; // First line has no indent (right after opening quote)
-            if (line === '') return ''; // Keep blank lines empty
-            return contentIndent + line;
+            if (idx === 0) return line;
+            if (line === '') return '';
+            return functionIndent + line;
         });
-        result = `${prefix}"${indentedLines.join('\n')}"${suffix}`;
-    } else {
-        result = unformatted;
+        
+        const result = `${functionIndent}fmsgbox("${indentedLines.join('\n')}")`;
+        
+        const startPos = document.positionAt(match.index);
+        const endPos = document.positionAt(match.index + fullMatch.length);
+        replacements.push({ range: new vscode.Range(startPos, endPos), text: result });
     }
     
-    edit.replace(selection, result);
+    // Apply all replacements in reverse order to maintain positions
+    for (let i = replacements.length - 1; i >= 0; i--) {
+        edit.replace(replacements[i].range, replacements[i].text);
+    }
+    
+    if (replacements.length === 0) {
+        vscode.window.showInformationMessage('No formatted msgbox() calls found to unformat.');
+    } else {
+        vscode.window.showInformationMessage(`Unformatted ${replacements.length} msgbox() call(s) to fmsgbox().`);
+    }
 }

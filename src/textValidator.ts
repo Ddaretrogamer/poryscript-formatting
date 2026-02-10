@@ -52,8 +52,8 @@ export class TextValidator {
 
         const maxLineLength = config.get<number>('maxLineLength', 208);
 
-        // Find all msgbox/format/message calls
-        const functionRegex = /(?:msgbox|format|message)\s*\([^)]*\)/gs;
+        // Find all msgbox/fmsgbox/format/message calls
+        const functionRegex = /(?:fmsgbox|msgbox|format|message)\s*\([^)]*\)/gs;
         let functionMatch;
 
         while ((functionMatch = functionRegex.exec(text)) !== null) {
