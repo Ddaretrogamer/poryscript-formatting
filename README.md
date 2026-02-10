@@ -14,12 +14,13 @@ A Visual Studio Code extension that provides real-time visual feedback for Pokem
 ## Usage
 
 1. Open any `.pory` file
-2. Write text inside `msgbox("")` functions
+2. Write text inside `fmsgbox("")` functions
 3. The extension will automatically highlight text segments:
    - Text within 208 pixels → Green background
-   - Text exceeding 208 pixels → Red background (add `\n`, `\l`, or `\p` to break the line)
-4. Highlight the entire function and press Alt + T to automattically add line breaks.
-   - Press Alt + shift + T to remove the line breaks.
+   - Text exceeding 208 pixels → orange background
+4. It will also automatically format text for you, just press ALT + T to format all ``fmsgbox()`` functions to ``msgbox()``
+   - Press enter to signify \n or \l
+   - Press enter 2x to add a line space between paragraphs for \p to be added
 
 ## Configuration
 
@@ -30,7 +31,8 @@ A Visual Studio Code extension that provides real-time visual feedback for Pokem
 ## Example
 
 ```poryscript
-msgbox("This is a short line.\nThis is another line that might be too long and will show red highlighting!")
+fmsgbox("This is a short line.
+This is another line that might be too long and will show orange highlighting!")
 ```
 
 ## Development
