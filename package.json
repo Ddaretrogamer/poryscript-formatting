@@ -2,7 +2,7 @@
   "name": "pokemon-text-validator",
   "displayName": "Pokemon Text Validator",
   "description": "Visual text length validator for Pokemon ROM hack textboxes",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "phantonomy",
   "author": "Phantonomy",
   "license": "MIT",
