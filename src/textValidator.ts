@@ -15,13 +15,13 @@ export class TextValidator {
 
         // Blue for characters within the limit, orange for characters exceeding it
         this.decorationTypes.set('valid', vscode.window.createTextEditorDecorationType({
-            backgroundColor: '#0072FF30', // 30 = ~20% opacity
-            border: '1px solid #0072FF'
+            backgroundColor: '#0072B230', // 30 = ~20% opacity
+            border: '1px solid #0072B2'
         }));
 
         this.decorationTypes.set('warning', vscode.window.createTextEditorDecorationType({
-            backgroundColor: '#FF880030',
-            border: '1px solid #FF8800'
+            backgroundColor: '#E69F0030',
+            border: '1px solid #E69F00'
         }));
     }
 
