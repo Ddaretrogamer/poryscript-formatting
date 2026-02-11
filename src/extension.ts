@@ -67,20 +67,55 @@ export function deactivate() {
     validator?.dispose();
 }
 
+function applyTextReplacements(text: string): string {
+    // Replace $ with ¥
+    text = text.replace(/\$/g, '¥');
+    
+    // Replace \e with é
+    text = text.replace(/\\e/g, 'é');
+    
+    // Replace \. with ellipsis
+    text = text.replace(/\\\./g, '…');
+    
+    // Replace arrow escape codes
+    text = text.replace(/\\au/g, '{UP_ARROW}');
+    text = text.replace(/\\ad/g, '{DOWN_ARROW}');
+    text = text.replace(/\\ar/g, '{RIGHT_ARROW}');
+    text = text.replace(/\\al/g, '{LEFT_ARROW}');
+    
+    // Replace \m and \f with ♂ and ♀
+    text = text.replace(/\\m/g, '♂');
+    text = text.replace(/\\f/g, '♀');
+
+    // Replace \qo and \qc with opening and closing quotation marks
+    text = text.replace(/\\qo/g, '“');
+    text = text.replace(/\\qc/g, '”');
+
+    // replace \h30 with {PAUSE_30}, or any \h followed by digits with {PAUSE_X}
+    text = text.replace(/\\h(\d+)/g, (match, p1) => `{PAUSE_${p1}}`);
+
+    return text;
+}
+
 function formatPokemonText(textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
     const document = textEditor.document;
     const text = document.getText();
     
     // Find all fmsgbox() calls in the document
     // Use [ \t]* to capture only horizontal whitespace (spaces/tabs), not newlines
-    const fmsgboxRegex = /([ \t]*)(fmsgbox)\s*\(\s*"([^]*?)"\s*\)/g;
+    // Capture optional additional parameters after the string (e.g., MSGBOX_AUTOCLOSE)
+    const fmsgboxRegex = /([ \t]*)(fmsgbox)\s*\(\s*"([^]*?)"\s*(,\s*[^)]*)?\)/g;
     let match;
     const replacements: { range: vscode.Range; text: string }[] = [];
     
     while ((match = fmsgboxRegex.exec(text)) !== null) {
         const fullMatch = match[0];
         const functionIndent = match[1];
-        const contentToFormat = match[3];
+        let contentToFormat = match[3];
+        const additionalParams = match[4] || '';
+        
+        // Apply text replacements before formatting
+        contentToFormat = applyTextReplacements(contentToFormat);
         
         // Split by lines and process
         const lines = contentToFormat.split(/\r?\n/);
@@ -125,7 +160,7 @@ function formatPokemonText(textEditor: vscode.TextEditor, edit: vscode.TextEdito
             resultParts.push(contentIndent + resultLines[i]);
         }
         
-        resultParts[resultParts.length - 1] += ')';
+        resultParts[resultParts.length - 1] += additionalParams + ')';
         
         // Use the document's line ending
         const eol = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
@@ -172,7 +207,7 @@ function unformatPokemonText(textEditor: vscode.TextEditor, edit: vscode.TextEdi
             continue;
         }
         
-        // Extract all quoted strings and join them
+        // Extract all quoted strings and any additional parameters
         const stringRegex = /"([^"]*)"/g;
         const strings: string[] = [];
         let stringMatch;
@@ -180,6 +215,10 @@ function unformatPokemonText(textEditor: vscode.TextEditor, edit: vscode.TextEdi
         while ((stringMatch = stringRegex.exec(innerContent)) !== null) {
             strings.push(stringMatch[1]);
         }
+        
+        // Extract additional parameters (e.g., MSGBOX_AUTOCLOSE) after the last string
+        const additionalParamsMatch = innerContent.match(/"[^"]*"\s*(,\s*[^)]*)\s*$/);
+        const additionalParams = additionalParamsMatch ? additionalParamsMatch[1] : '';
         
         const contentToUnformat = strings.join('');
         
@@ -197,7 +236,7 @@ function unformatPokemonText(textEditor: vscode.TextEditor, edit: vscode.TextEdi
             return functionIndent + line;
         });
         
-        const result = `${functionIndent}fmsgbox("${indentedLines.join('\n')}")`;
+        const result = `${functionIndent}fmsgbox("${indentedLines.join('\n')}"${additionalParams})`;
         
         const startPos = document.positionAt(match.index);
         const endPos = document.positionAt(match.index + fullMatch.length);

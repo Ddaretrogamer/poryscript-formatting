@@ -45,16 +45,14 @@ class TextValidator {
         // Clear old decorations
         this.decorationTypes.forEach(dec => dec.dispose());
         this.decorationTypes.clear();
-        const config = vscode.workspace.getConfiguration('pokemonTextValidator');
-        const validColor = config.get('validColor', '#0072B2');
-        const warningColor = config.get('warningColor', '#E69F00');
+        // Blue for characters within the limit, orange for characters exceeding it
         this.decorationTypes.set('valid', vscode.window.createTextEditorDecorationType({
-            backgroundColor: validColor + '30', // 30 = ~20% opacity
-            border: `1px solid ${validColor}`
+            backgroundColor: '#0072FF30', // 30 = ~20% opacity
+            border: '1px solid #0072FF'
         }));
         this.decorationTypes.set('warning', vscode.window.createTextEditorDecorationType({
-            backgroundColor: warningColor + '30',
-            border: `1px solid ${warningColor}`
+            backgroundColor: '#FF880030',
+            border: '1px solid #FF8800'
         }));
     }
     validateDocument(editor) {
@@ -123,16 +121,8 @@ class TextValidator {
                 const trimStart = line.indexOf(trimmedLine);
                 const contentStart = startPos + offset + trimStart;
                 const contentEnd = contentStart + trimmedLine.length;
-                const lineStart = document.positionAt(contentStart);
-                const lineEnd = document.positionAt(contentEnd);
-                const range = new vscode.Range(lineStart, lineEnd);
-                const pixelWidth = this.calculateLineWidth(trimmedLine);
-                if (pixelWidth > maxLineLength) {
-                    warningRanges.push(range);
-                }
-                else {
-                    validRanges.push(range);
-                }
+                // Validate character by character for this line
+                this.validateSegmentCharByChar(trimmedLine, contentStart, document, maxLineLength, validRanges, warningRanges);
             }
             // Move offset past this line and the newline character(s)
             offset += line.length;
@@ -152,16 +142,7 @@ class TextValidator {
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
             if (segment.length > 0) {
-                const pixelWidth = this.calculateLineWidth(segment);
-                const segmentStart = document.positionAt(startPos + offset);
-                const segmentEnd = document.positionAt(startPos + offset + segment.length);
-                const range = new vscode.Range(segmentStart, segmentEnd);
-                if (pixelWidth > maxLineLength) {
-                    warningRanges.push(range);
-                }
-                else {
-                    validRanges.push(range);
-                }
+                this.validateSegmentCharByChar(segment, startPos + offset, document, maxLineLength, validRanges, warningRanges);
             }
             // Move offset past this segment
             offset += segment.length;
@@ -169,6 +150,79 @@ class TextValidator {
             if (i < segments.length - 1) {
                 offset += 2;
             }
+        }
+    }
+    validateSegmentCharByChar(text, startPos, document, maxLineLength, validRanges, warningRanges) {
+        let currentWidth = 0;
+        let i = 0;
+        let validStart = -1;
+        let warningStart = -1;
+        let exceedsLimit = false;
+        while (i < text.length) {
+            const charStart = i;
+            let charWidth = 0;
+            let charEnd = i + 1;
+            // Handle escape sequences like {PLAYER}, {RIVAL}, etc.
+            if (text[i] === '{') {
+                const endBrace = text.indexOf('}', i);
+                if (endBrace !== -1) {
+                    const placeholder = text.substring(i, endBrace + 1);
+                    charWidth = (0, fontWidths_1.getCharacterWidth)(placeholder);
+                    charEnd = endBrace + 1;
+                }
+                else {
+                    charWidth = (0, fontWidths_1.getCharacterWidth)(text[i]);
+                }
+            }
+            else {
+                charWidth = (0, fontWidths_1.getCharacterWidth)(text[i]);
+            }
+            currentWidth += charWidth;
+            // Check if we've exceeded the limit
+            if (currentWidth > maxLineLength && !exceedsLimit) {
+                // We just exceeded the limit
+                exceedsLimit = true;
+                // Add the valid range up to this point
+                if (validStart !== -1) {
+                    const rangeStart = document.positionAt(startPos + validStart);
+                    const rangeEnd = document.positionAt(startPos + charStart);
+                    validRanges.push(new vscode.Range(rangeStart, rangeEnd));
+                }
+                // Start warning range
+                warningStart = charStart;
+            }
+            else if (currentWidth <= maxLineLength && exceedsLimit) {
+                // We're back within the limit (shouldn't happen normally, but handle it)
+                exceedsLimit = false;
+                // Add the warning range
+                if (warningStart !== -1) {
+                    const rangeStart = document.positionAt(startPos + warningStart);
+                    const rangeEnd = document.positionAt(startPos + charStart);
+                    warningRanges.push(new vscode.Range(rangeStart, rangeEnd));
+                }
+                // Start valid range
+                validStart = charStart;
+            }
+            else if (!exceedsLimit && validStart === -1) {
+                // Initialize valid range at the start
+                validStart = charStart;
+            }
+            else if (exceedsLimit && warningStart === -1) {
+                // Initialize warning range
+                warningStart = charStart;
+            }
+            i = charEnd;
+        }
+        // Add the final range
+        if (validStart !== -1 && !exceedsLimit) {
+            const rangeStart = document.positionAt(startPos + validStart);
+            const rangeEnd = document.positionAt(startPos + text.length);
+            validRanges.push(new vscode.Range(rangeStart, rangeEnd));
+        }
+        else if (warningStart !== -1 && exceedsLimit) {
+            const rangeStart = document.positionAt(startPos + warningStart);
+            const rangeEnd = document.positionAt(startPos + text.length);
+            warningRanges.push(new vscode.Range(rangeStart, rangeEnd));
         }
     }
     calculateLineWidth(text) {
