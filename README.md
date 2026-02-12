@@ -31,7 +31,7 @@ A Visual Studio Code extension that provides real-time visual feedback for Pokem
 ## Example
 
 ```poryscript
-\\regular msgbox will be unaffected by alt + t but will still highlight.
+// regular msgbox will be unaffected by alt + t but will still highlight.
 msgbox("This is a short line.\n
 This is another line that might be too long and will show orange highlighting!")
 
