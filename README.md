@@ -42,7 +42,7 @@ This is a second line which is going to be a little too long.
 This is a third line
 
 This is a new paragraph.
-This will say poke\emon correctly.")
+This will say pok\emon correctly.")
 ```
 
 
